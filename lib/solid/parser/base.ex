@@ -52,6 +52,30 @@ defmodule Solid.Parser.Base do
         |> Enum.map(fn tag ->
           tag(tag.spec(__MODULE__), tag)
         end)
+        base_tags_without =
+          [
+            Solid.Tag.Counter,
+            Solid.Tag.Comment,
+            Solid.Tag.Assign,
+            Solid.Tag.Capture,
+            Solid.Tag.If,
+            Solid.Tag.Case,
+            Solid.Tag.For,
+            Solid.Tag.Raw,
+            Solid.Tag.Cycle,
+            Solid.Tag.Render
+          ]
+          |> Enum.map(fn tag ->
+            tag(tag.spec(__MODULE__), tag)
+          end)
+        continue_and_break =
+          [
+            Solid.Tag.Break,
+            Solid.Tag.Continue,
+          ]
+          |> Enum.map(fn tag ->
+            tag(tag.spec(__MODULE__), tag)
+          end)
 
       custom_tags =
         if custom_tag_modules != [] do
@@ -86,10 +110,24 @@ defmodule Solid.Parser.Base do
 
       leading_whitespace =
         Literal.whitespace(min: 1)
+        |> lookahead_not(choice(continue_and_break))
         |> lookahead(choice([opening_wc_object, opening_wc_tag]))
         |> ignore()
 
-      defcombinator(:liquid_entry, repeat(choice([object, tags, text, leading_whitespace])))
+        leading_whitespace_break_or_continue =
+          Literal.whitespace(min: 1)
+          |> lookahead(choice([Solid.Tag.Break, Solid.Tag.Continue]|> Enum.map(fn tag ->
+            tag(tag.spec(__MODULE__), tag)
+          end)))
+          |> lookahead_not(choice(base_tags_without))
+          # |> lookahead(choice([opening_wc_object, opening_wc_tag |> concat(choice([Solid.Tag.Break, Solid.Tag.Continue]|> Enum.map(fn tag ->
+          #  tag(tag.spec(__MODULE__), tag)
+          # end)))]))
+          |>replace("\n")
+          #|> ignore()
+          |> tag(:text)
+
+      defcombinator(:liquid_entry, repeat(choice([object, tags, text, leading_whitespace, leading_whitespace_break_or_continue])))
 
       defparsec(:parse, parsec(:liquid_entry) |> eos())
     end

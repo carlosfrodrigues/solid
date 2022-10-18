@@ -1,18 +1,18 @@
 import WhitespaceTrimHelper
 
-# test_permutations "break tag outside for body" do
-# """
-# ########################
+test_permutations "break tag outside for body" do
+"""
+########################
 
-# this should print
+this should print
 
-# {% break %}
+{% break %}
 
-# this should not print
+this should not print
 
-# ########################
-# """
-# end
+########################
+"""
+end
 
 test_permutations "break tag inside for body" do
   """
